@@ -56,12 +56,12 @@ var easyconf = new Object({
         FLEXIBLE:1
     },
     apps:{
-        INIT:"servlet/Init",
-        LIST:"servlet/Search",
-        DELETE:"servlet/Delete",
-        UPDATE:"servlet/Update",
-        INSERT:"servlet/Insert",
-        RANGE:"servlet/Range"
+        INIT:"Init",
+        LIST:"Search",
+        DELETE:"Delete",
+        UPDATE:"Update",
+        INSERT:"Insert",
+        RANGE:"Range"
     },
     dateRE:RegExp("^\\d{4}-(0?[1-9]|1[0-2])-(0?[1-9]|[1-2]\\d|3[0-1]) ([0-1]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{2}$"),
     _keyStr : "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=",
@@ -793,7 +793,7 @@ var easyconf = new Object({
                 string += String.fromCharCode(c);
                 i++;
             }
-            else if((c > 191) && (c < 224)) {
+            else if (c > 191 && c < 224) {
                 c2 = utftext.charCodeAt(i+1);
                 string += String.fromCharCode(((c & 31) << 6) | (c2 & 63));
                 i += 2;
@@ -812,12 +812,20 @@ var easyconf = new Object({
 
     // user's function here
     userfunc: {
-        testfunc1:function(arg1, arg2, arg3) {
-            return true;
+        checkIp:function(ip) {
+            var exp=/^(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])$/; 
+            var reg = ip.match(exp);
+            if(reg  != null) 
+                return true;
+            else
+                return false;
         },
 
-        testfunc2:function(arg1, arg2) {
-            return true;
+        checkPort:function(port) {
+            if (0 <= port && port <= 65535)
+                return true;
+            else
+                return false;
         }
     }
 });
