@@ -224,13 +224,11 @@ var easyconf = new Object({
 
     focus:function(http, column) {
         if (ec.isColFlexible(column)) {
-            ec.lock();
             http.get(ec.apps.RANGE, {params:{table:column.flexible.table, key:column.flexible.key, value:column.flexible.value, query:ec.dict2str(ec.getRGV(column))}}).success(
 //            url = "./range.json"
 //            http.get(url).success(
                 function(response) {
                     ec.range[column.id] = response.data;
-                    ec.unLock();
                 }
             );
         }
@@ -264,6 +262,7 @@ var easyconf = new Object({
                 if (response.result == "00") {
                     if (ec.isInsertView()) {
                         ec.setDefaultValue();
+                        ec.allCheck();
                         ec.keyContent = {};
                     }
                 }

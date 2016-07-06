@@ -91,7 +91,7 @@
                 "table":"province",
                 "where":[]
             },
-            "dft":"01"
+            "dft":""
         },
         {
             "id":"city_id",
@@ -117,13 +117,13 @@
                 "table":"city",
                 "where":["province_id"]
             },
-            "dft":"01"
+            "dft":""
         },
         {
             "id":"is_active",
             "name":"是否启用",
             "isShow":true,
-            "isPrimaryKey":true,
+            "isPrimaryKey":false,
             "isNull":false,
             "type":0,
             "control":1,

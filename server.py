@@ -3,7 +3,7 @@ from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 from json import load, loads, dumps
 from argparse import ArgumentParser
 import urlparse
-from sqlite3 import connect
+from sqlite3 import connect, IntegrityError
 from base64 import encodestring, decodestring
 
 class S(BaseHTTPRequestHandler):
@@ -25,7 +25,66 @@ class S(BaseHTTPRequestHandler):
             f.seek(0)
             self.wfile.write(f.read())
 
-    def _do_range(self, key, value, table, query):
+    def _do_Insert(self, table, data):
+        db = connect(args.database)
+        cs = db.cursor()
+        sql1 = 'insert into {table} ('.format(table=table)
+        sql2 = ' values ('
+        i = 0
+        for elem in data.split(','):
+            (col, value) = map(lambda x:decodestring(x), elem.split(':'))
+            sql1 += ('{col}' if i == 0 else ', {col}').format(col=col)
+            formatValue = ('\'{value}\'' if S._tableConfig[col]['type'] in (0, 4) else '{value}').format(value=value)
+            sql2 += ('{formatValue}' if i == 0 else ', {formatValue}').format(formatValue=formatValue)
+            i += 1
+        sql = sql1 + ')' + sql2 + ')'
+        try:
+            cs.execute(sql)
+        except IntegrityError, e:
+            response = dict(result='01', message='NOT UNIQUE')
+        else:
+            response = dict(result='00', message='OK')
+            db.commit()
+        finally:
+            db.close()
+            self.wfile.write(dumps(response))
+
+    def _do_Delete(self, table, query):
+        db = connect(args.database)
+        cs = db.cursor()
+        sql = 'delete from {table} where 1 = 1'.format(table=table)
+        if len(query) > 0:
+            for elem in query.split(','):
+                (col, value) = map(lambda x:decodestring(x), elem.split(':'))
+                sql += ' and {col} = '.format(col=col) + ('\'{value}\'' if S._tableConfig[col]['type'] in (0, 4) else '{value}').format(value=value)
+        cs.execute(sql)
+        db.commit()
+        db.close()
+        response = dict(result='00', message='OK')
+        self.wfile.write(dumps(response))
+
+    def _do_Update(self, table, data, query):
+        db = connect(args.database)
+        cs = db.cursor()
+        sql = 'update {table} set'.format(table=table)
+        i = 0
+        for elem in data.split(','):
+            (col, value) = map(lambda x:decodestring(x), elem.split(':'))
+            formatValue = ('\'{value}\'' if S._tableConfig[col]['type'] in (0, 4) else '{value}').format(value=value)
+            sql += (' {col} = {formatValue}' if i == 0 else ', {col} = {formatValue}').format(col=col, formatValue=formatValue)
+            i += 1
+        sql += 'where 1 = 1'
+        if len(query) > 0:
+            for elem in query.split(','):
+                (col, value) = map(lambda x:decodestring(x), elem.split(':'))
+                sql += ' and {col} = '.format(col=col) + ('\'{value}\'' if S._tableConfig[col]['type'] in (0, 4) else '{value}').format(value=value)
+        cs.execute(sql)
+        db.commit()
+        db.close()
+        response = dict(result='00', message='OK')
+        self.wfile.write(dumps(response))
+
+    def _do_Range(self, key, value, table, query):
         db = connect(args.database)
         cs = db.cursor()
         sql = 'select {key}, {value} from {table} where 1 = 1'.format(key=key, value=value, table=table)
@@ -40,7 +99,7 @@ class S(BaseHTTPRequestHandler):
         db.close()
         self.wfile.write(dumps(response))
 
-    def _do_list(self, table, data, begin, count, query):
+    def _do_List(self, table, data, begin, count, query):
         db = connect(args.database)
         cs1 = db.cursor()
         cs2 = db.cursor()
@@ -105,33 +164,55 @@ class S(BaseHTTPRequestHandler):
                 key = params['key'][0]
                 value = params['value'][0]
                 query = params.get('query', [''])[0]
-                self._do_range(key, value, table, query)
+                self._do_Range(key, value, table, query)
             elif parsedPath.path == '/Search':
                 table = params['table'][0]
                 data = params['data'][0]
                 begin = int(params['begin'][0])
                 count = int(params['count'][0])
                 query = params.get('query', [''])[0]
-                self._do_list(table, data, begin, count, query)
+                self._do_List(table, data, begin, count, query)
+            elif parsedPath.path == '/Search':
+                table = params['table'][0]
+                data = params['data'][0]
+                self._do_insert(table, data)
 
     def do_HEAD(self):
         self._set_headers()
 
     def do_POST(self):
         self._set_headers()
-        print "in post method"
-        self.data_string = self.rfile.read(int(self.headers['Content-Length']))
+        parsedPath = urlparse.urlparse(self.path)
+        params = loads(self.rfile.read(int(self.headers['Content-Length'])))
 
-        self.send_response(200)
-        self.end_headers()
+        if parsedPath.path == '/Insert':
+            table = params['table']
+            data = params['data']
+            self._do_Insert(table, data)
+        elif parsedPath.path == '/Delete':
+            table = params['table']
+            query = params['query']
+            self._do_Delete(table, query)
+        elif parsedPath.path == '/Update':
+            table = params['table']
+            data = params['data']
+            query = params['query']
+            self._do_Update(table, data, query)
 
-        data = loads(self.data_string)
-        with open("test123456.json", "w") as outfile:
-            dumps(data, outfile)
-        print "{}".format(data)
-        f = open("for_presen.py")
-        self.wfile.write(f.read())
-        return
+
+#        self._set_headers()
+#        print "in post method"
+#
+#        self.send_response(200)
+#        self.end_headers()
+#
+#        data = loads(self.data_string)
+#        with open("test123456.json", "w") as outfile:
+#            dumps(data, outfile)
+#        print "{}".format(data)
+#        f = open("for_presen.py")
+#        self.wfile.write(f.read())
+#        return
 
 def run(server_class=HTTPServer, handler_class=S, port=80):
     server_address = ('', port)
