@@ -697,6 +697,7 @@ var easyconf = new Object({
         for (var i=0; i<columns.length; i++) {
             column = columns[i];
             ec.detailContent[column.id] = column.dft;
+            ec.detailKeyAndValue[column.id] = column.dft;
         }
     },
     
