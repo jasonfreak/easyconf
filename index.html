@@ -117,7 +117,8 @@
                             <td ng-cloak>{{ column.name }}</td>
                             <td>
                                 <input type="text" ng-if="easyconf.isColText(column)" ng-disabled="easyconf.disabled || easyconf.isDetailDisable(column)" ng-change="change()" ng-model="easyconf.detailContent[column.id]" />
-                                <select ng-if="easyconf.isColCbox(column)" ng-disabled="easyconf.disabled || easyconf.isDetailDisable(column)" ng-focus="focus()" ng-change="change()" ng-options="c.key as c.value for c in easyconf.range[column.id]" ng-model=easyconf.detailContent[column.id]></select>
+                                <input type="text" ng-if="easyconf.isColCbox(column)" ng-show="easyconf.isColFlexible(column) && !easyconf.isCandidateDone[column.id]" ng-disabled="easyconf.disabled || easyconf.isDetailDisable(column)" ng-click="setCandidate()" ng-model="easyconf.detailKeyAndValue[column.id]" />
+                                <select ng-if="easyconf.isColCbox(column)" ng-show="!easyconf.isColFlexible(column) || easyconf.isCandidateDone[column.id]" ng-disabled="easyconf.disabled || easyconf.isDetailDisable(column)" ng-blur="easyconf.blur(column)" ng-change="change()" ng-options="c.key as c.value for c in easyconf.range[column.id]" ng-model=easyconf.detailContent[column.id]></select>
                             </td>
                             <td ng-cloak ng-show="easyconf.isMsgShow()">
                                 {{ easyconf.errmsg[column.id] }}
@@ -130,10 +131,10 @@
                                     $scope.change = function() {
                                         easyconf.change($scope.column);
                                     }
-                                    easyconf.setCheck($scope.column, $scope.change);
-                                    $scope.focus = function() {
-                                        easyconf.focus($http, $scope.column);
+                                    $scope.setCandidate = function() {
+                                        easyconf.setCandidate($http, $scope.column);
                                     }
+                                    easyconf.setCheck($scope.column, $scope.change);
                                 }
                             );
                         </script>

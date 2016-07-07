@@ -80,6 +80,8 @@ var easyconf = new Object({
         ec.primaryKeyContent = {};
         ec.candidate = {};
         ec.range = {};
+        ec.rangeDict = {};
+        ec.detailKeyAndValue = {};
         ec.err = {};
         ec.errmsg = {};
         ec.check = {};
@@ -87,6 +89,7 @@ var easyconf = new Object({
         ec.cursor = 0;
         ec.lastquery = null;
         ec.view = ec.views.LIST;
+        ec.isCandidateDone = {};
 
         http.get(ec.apps.INIT, {params:{table:ec.table}}).success(
 //        url = "./init.json";
@@ -109,7 +112,7 @@ var easyconf = new Object({
 //        http.get(url).success(
             function(response) {
                 ec.setListContent(response.data);
-                ec.lastquery = query;
+                ec.lastquery = ec.clone(query);
                 ec.unLock();
             }
         );
@@ -119,6 +122,8 @@ var easyconf = new Object({
         ec.setDefaultValue();
         ec.keyContent = {};
         ec.view = 3; // INSERT
+        ec.primaryKeyContent = {};
+        ec.detailKeyAndValue = {};
         ec.allCheck();
     },
 
@@ -222,15 +227,29 @@ var easyconf = new Object({
         ec.check[column.id] = change;
     },
 
-    focus:function(http, column) {
+    setCandidate:function(http, column) {
         if (ec.isColFlexible(column)) {
             http.get(ec.apps.RANGE, {params:{table:column.flexible.table, key:column.flexible.key, value:column.flexible.value, query:ec.dict2str(ec.getRGV(column))}}).success(
 //            url = "./range.json"
 //            http.get(url).success(
                 function(response) {
-                    ec.range[column.id] = response.data;
+                    range = ec.range[column.id] = response.data;
+                    ec.rangeDict[column.id] = {};
+                    for (var i=0; i<range.length; i++) {
+                        key = range[i].key;
+                        value = range[i].value;
+                        ec.rangeDict[column.id][key] = value;
+                    }
+                    ec.isCandidateDone[column.id] = true;
                 }
             );
+        }
+    },
+
+    blur:function(column) {
+        if (ec.isColFlexible(column)) {
+            ec.isCandidateDone[column.id] = false;
+            ec.detailKeyAndValue[column.id] = ec.detailContent[column.id] + '-' + ec.rangeDict[column.id][ec.detailContent[column.id]];
         }
     },
 
@@ -420,6 +439,7 @@ var easyconf = new Object({
                     }
                     else {
                         ec.range[column.id] = [{"key":keyContent, "value":valueContent}];
+                        ec.detailKeyAndValue[column.id] = keyContent + '-' + valueContent
                     }
                 }
                 else {
@@ -807,6 +827,36 @@ var easyconf = new Object({
         }
 
         return string;
+    },
+
+    clone:function (obj) {
+        var copy;
+
+        if (null == obj || "object" != typeof obj) return obj;
+
+        if (obj instanceof Date) {
+            copy = new Date();
+            copy.setTime(obj.getTime());
+            return copy;
+        }
+
+        if (obj instanceof Array) {
+            copy = [];
+            for (var i = 0, len = obj.length; i < len; i++) {
+                copy[i] = ec.clone(obj[i]);
+            }
+            return copy;
+        }
+
+        if (obj instanceof Object) {
+            copy = {};
+            for (var attr in obj) {
+                if (obj.hasOwnProperty(attr)) copy[attr] = ec.clone(obj[attr]);
+            }
+            return copy;
+        }
+
+        throw new Error("Unable to copy obj! Its type isn't supported.");
     },
 
     // user's function here

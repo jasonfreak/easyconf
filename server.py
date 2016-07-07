@@ -199,22 +199,8 @@ class S(BaseHTTPRequestHandler):
             query = params['query']
             self._do_Update(table, data, query)
 
-
-#        self._set_headers()
-#        print "in post method"
-#
-#        self.send_response(200)
-#        self.end_headers()
-#
-#        data = loads(self.data_string)
-#        with open("test123456.json", "w") as outfile:
-#            dumps(data, outfile)
-#        print "{}".format(data)
-#        f = open("for_presen.py")
-#        self.wfile.write(f.read())
-#        return
-
 def run(server_class=HTTPServer, handler_class=S, port=80):
+    print 'server start...'
     server_address = ('', port)
     httpd = server_class(server_address, handler_class)
     httpd.serve_forever()
